@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { Crown, Trophy, Medal, Award } from 'lucide-react';
 import './App.css';
 
 interface Submission {
@@ -139,34 +140,99 @@ export default function App() {
   const third = podium[2];
 
   const renderPodiumCard = (submission: Submission, position: number, label: string) => {
-    const isFirst = position === 1;
     const scoreNum = parseFloat(submission.score as string);
     const tag = getTag(submission.repo_name);
+
+    let cardBorder = '1px solid var(--br)';
+    let cardBorderTop = '2px solid var(--br2)';
+    let cardBgImage = 'none';
+    let scoreColor = 'var(--cream)';
+    let badgeBg = '';
+    let badgeBorder = '';
+    let badgeIcon = null;
+    let badgeText = '';
+    let labelColor = 'var(--cream3)';
+
+    if (position === 1) {
+      cardBorder = '1px solid rgba(255, 179, 0, 0.4)';
+      cardBorderTop = '2px solid #ffb300';
+      cardBgImage = 'linear-gradient(180deg, rgba(255, 179, 0, 0.08) 0%, var(--s1) 60%)';
+      scoreColor = '#ffb300';
+      labelColor = '#ffb300';
+      badgeBg = 'linear-gradient(135deg, #ffe082, #ffb300)';
+      badgeBorder = '1px solid #ffd54f';
+      badgeIcon = <Crown size={12} style={{ color: '#000000', fill: '#000000' }} />;
+      badgeText = '1st Place';
+    } else if (position === 2) {
+      cardBorder = '1px solid rgba(224, 224, 224, 0.3)';
+      cardBorderTop = '2px solid #b0bec5';
+      cardBgImage = 'linear-gradient(180deg, rgba(224, 224, 224, 0.05) 0%, var(--s1) 60%)';
+      scoreColor = '#ffffff';
+      labelColor = '#cfd8dc';
+      badgeBg = 'linear-gradient(135deg, #ffffff, #b0bec5)';
+      badgeBorder = '1px solid #cfd8dc';
+      badgeIcon = <Trophy size={12} style={{ color: '#000000', fill: '#000000' }} />;
+      badgeText = '2nd Place';
+    } else if (position === 3) {
+      cardBorder = '1px solid rgba(255, 171, 64, 0.3)';
+      cardBorderTop = '2px solid #ffab40';
+      cardBgImage = 'linear-gradient(180deg, rgba(255, 171, 64, 0.05) 0%, var(--s1) 60%)';
+      scoreColor = '#ffab40';
+      labelColor = '#ffd180';
+      badgeBg = 'linear-gradient(135deg, #ffd180, #ffab40)';
+      badgeBorder = '1px solid #ffe0b2';
+      badgeIcon = <Award size={12} style={{ color: '#000000', fill: '#000000' }} />;
+      badgeText = '3rd Place';
+    }
 
     return (
       <div 
         style={{
           background: 'var(--s1)',
-          border: isFirst ? '1px solid rgba(255, 107, 43, 0.4)' : '1px solid var(--br)',
-          borderTop: `2px solid ${isFirst ? 'var(--orange)' : 'var(--br2)'}`,
+          border: cardBorder,
+          borderTop: cardBorderTop,
           borderRadius: '8px',
-          padding: '24px 16px',
+          padding: '28px 16px 20px 16px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          backgroundImage: isFirst ? 'linear-gradient(180deg, rgba(255, 107, 43, 0.06) 0%, var(--s1) 60%)' : 'none',
+          backgroundImage: cardBgImage,
           position: 'relative'
         }}
       >
+        {/* Floating badge */}
+        <div style={{
+          position: 'absolute',
+          top: '-12px',
+          background: badgeBg,
+          border: badgeBorder,
+          color: '#000000',
+          borderRadius: '20px',
+          padding: '4px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          fontSize: '10px',
+          fontWeight: 'bold',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          zIndex: 2,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em'
+        }} className="font-mono-custom">
+          {badgeIcon}
+          <span>{badgeText}</span>
+        </div>
+
         <span 
           className="font-mono-custom" 
           style={{ 
             fontSize: '9px', 
             textTransform: 'uppercase', 
             letterSpacing: '.14em', 
-            color: isFirst ? 'var(--orange)' : 'var(--cream3)',
-            marginBottom: '12px'
+            color: labelColor,
+            marginBottom: '12px',
+            marginTop: '4px'
           }}
         >
           {label}
@@ -177,7 +243,7 @@ export default function App() {
             style={{ 
               fontSize: '42px', 
               fontWeight: 700, 
-              color: isFirst ? 'var(--orange)' : position === 2 ? 'var(--cream2)' : 'var(--cream3)',
+              color: scoreColor,
               lineHeight: 1
             }}
           >
@@ -330,7 +396,6 @@ export default function App() {
                 <div style={{ padding: '16px', textAlign: 'center', color: 'var(--dim)', fontSize: '10px' }} className="font-mono-custom">
                   No additional rankings below Top 3.
                 </div>
-              ) : (
                 submissions.slice(3).map((submission, index) => {
                   const rankNum = index + 4;
                   const scoreNum = parseFloat(submission.score as string);
@@ -341,6 +406,29 @@ export default function App() {
 
                   const tag = getTag(submission.repo_name);
                   const delay = index * 30; // 30ms stagger
+
+                  // Custom styles for other ranks
+                  let rankColor = 'var(--dim)';
+                  let rankBg = 'transparent';
+                  let rankBorder = '1px solid transparent';
+                  
+                  if (rankNum === 4 || rankNum === 5) {
+                    rankColor = '#10b981'; // Emerald Green
+                    rankBg = 'rgba(16, 185, 129, 0.08)';
+                    rankBorder = '1px solid rgba(16, 185, 129, 0.25)';
+                  } else if (rankNum >= 6 && rankNum <= 10) {
+                    rankColor = '#3b82f6'; // Electric Blue
+                    rankBg = 'rgba(59, 130, 246, 0.08)';
+                    rankBorder = '1px solid rgba(59, 130, 246, 0.25)';
+                  } else if (rankNum >= 11 && rankNum <= 20) {
+                    rankColor = '#8b5cf6'; // Amethyst Purple
+                    rankBg = 'rgba(139, 92, 246, 0.08)';
+                    rankBorder = '1px solid rgba(139, 92, 246, 0.25)';
+                  } else {
+                    rankColor = 'var(--cream3)'; // Contender Silver/Gray
+                    rankBg = 'rgba(160, 144, 128, 0.05)';
+                    rankBorder = '1px solid rgba(160, 144, 128, 0.15)';
+                  }
 
                   return (
                     <div 
@@ -371,7 +459,24 @@ export default function App() {
                       }}
                     >
                       {/* Rank */}
-                      <div className="font-mono-custom" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--dim)', textAlign: 'center' }}>
+                      <div 
+                        className="font-mono-custom" 
+                        style={{ 
+                          fontSize: '11px', 
+                          fontWeight: 700, 
+                          color: rankColor, 
+                          textAlign: 'center',
+                          background: rankBg,
+                          border: rankBorder,
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto'
+                        }}
+                      >
                         {String(rankNum).padStart(2, '0')}
                       </div>
 
