@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import { Crown, Trophy, Medal, Award } from 'lucide-react';
+import { Crown, Trophy, Award } from 'lucide-react';
 import './App.css';
 
 interface Submission {
