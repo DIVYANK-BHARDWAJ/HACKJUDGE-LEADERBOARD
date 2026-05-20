@@ -396,6 +396,7 @@ export default function App() {
                 <div style={{ padding: '16px', textAlign: 'center', color: 'var(--dim)', fontSize: '10px' }} className="font-mono-custom">
                   No additional rankings below Top 3.
                 </div>
+              ) : (
                 submissions.slice(3).map((submission, index) => {
                   const rankNum = index + 4;
                   const scoreNum = parseFloat(submission.score as string);
