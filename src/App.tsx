@@ -49,9 +49,10 @@ export default function App() {
       setSubmissions(data || []);
       setSecondsSinceUpdate(0);
       setError(null);
-    } catch (err: any) {
-      console.error('Error syncing standings:', err.message);
-      setError(err.message || 'Failed to sync with Supabase.');
+    } catch (err) {
+      const dbError = err as { message?: string };
+      console.error('Error syncing standings:', dbError.message);
+      setError(dbError.message || 'Failed to sync with Supabase.');
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +61,7 @@ export default function App() {
   // Animate the bar fills on every data load
   useEffect(() => {
     if (submissions.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAnimate(false);
       const t = setTimeout(() => setAnimate(true), 50);
       return () => clearTimeout(t);
@@ -68,6 +70,7 @@ export default function App() {
 
   // Real-time subscription & fallback polling
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStandings();
 
     // Polling every 10 seconds as requested
@@ -409,9 +412,9 @@ export default function App() {
                   const delay = index * 30; // 30ms stagger
 
                   // Custom styles for other ranks
-                  let rankColor = 'var(--dim)';
-                  let rankBg = 'transparent';
-                  let rankBorder = '1px solid transparent';
+                  let rankColor: string;
+                  let rankBg: string;
+                  let rankBorder: string;
                   
                   if (rankNum === 4 || rankNum === 5) {
                     rankColor = '#10b981'; // Emerald Green
