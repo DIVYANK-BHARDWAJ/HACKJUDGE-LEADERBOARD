@@ -92,29 +92,61 @@ export default function App() {
     };
   }, []);
 
-  // Timer countdown hook
-  useEffect(() => {
-    const endTimeStr = import.meta.env.VITE_HACKATHON_END_TIME || '2026-12-01T18:00:00Z';
-    const endTime = new Date(endTimeStr).getTime();
+  // Timer countdown hook — fetches end time from Supabase config table (shared with admin portal)
+  const [endTimeMs, setEndTimeMs] = useState<number>(() => {
+    const fallback = import.meta.env.VITE_HACKATHON_END_TIME || '2026-12-01T18:00:00Z';
+    return new Date(fallback).getTime();
+  });
 
+  // Fetch the live end time from Supabase config table
+  const fetchEndTime = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('config')
+        .select('value')
+        .eq('key', 'end_time')
+        .maybeSingle();
+
+      if (!error && data?.value) {
+        setEndTimeMs(new Date(data.value).getTime());
+      }
+    } catch {
+      // Silently ignore — fallback value stays active
+    }
+  };
+
+  useEffect(() => {
+    // Fetch immediately and then every 30 seconds so admin changes propagate
+    fetchEndTime();
+    const configPoll = setInterval(fetchEndTime, 30000);
+    return () => clearInterval(configPoll);
+  }, []);
+
+  useEffect(() => {
     const updateTimer = () => {
       const now = Date.now();
-      const diff = endTime - now;
+      const diff = endTimeMs - now;
 
       if (diff <= 0) {
-        setCountdown('00:00:00');
+        setCountdown('ENDED');
         return;
       }
 
-      const hrs = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      const hrs = Math.floor((diff % 86400000) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
 
-      const formatted = [
-        String(hrs).padStart(2, '0'),
-        String(mins).padStart(2, '0'),
-        String(secs).padStart(2, '0')
-      ].join(':');
+      let formatted: string;
+      if (days > 0) {
+        formatted = `${days}d ${String(hrs).padStart(2, '0')}h ${String(mins).padStart(2, '0')}m`;
+      } else {
+        formatted = [
+          String(hrs).padStart(2, '0'),
+          String(mins).padStart(2, '0'),
+          String(secs).padStart(2, '0')
+        ].join(':');
+      }
 
       setCountdown(formatted);
     };
@@ -122,7 +154,7 @@ export default function App() {
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [endTimeMs]);
 
   // Tracking seconds since last update
   useEffect(() => {
