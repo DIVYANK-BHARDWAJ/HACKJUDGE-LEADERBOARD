@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './supabase';
 import { Crown, Trophy, Award } from 'lucide-react';
 import './App.css';
 
@@ -39,20 +38,26 @@ export default function App() {
 
   const fetchStandings = async () => {
     try {
-      const { data, error: dbError } = await supabase
-        .from('submissions')
-        .select('*')
-        .order('score', { ascending: false });
-
-      if (dbError) throw dbError;
+      const response = await fetch(`${import.meta.env.VITE_JUDGING_ENGINE_URL || 'http://localhost:3001'}/api/results`);
+      if (!response.ok) throw new Error('Failed to fetch from judging engine');
+      const json = await response.json();
       
-      setSubmissions(data || []);
+      const formattedData = (json.results || []).map((s: any) => ({
+        id: s.id,
+        github_url: s.repoUrl,
+        repo_name: s.repoName,
+        owner: s.repoOwner,
+        score: s.scoreTotal,
+        submitted_at: s.createdAt,
+      }));
+
+      setSubmissions(formattedData);
       setSecondsSinceUpdate(0);
       setError(null);
     } catch (err) {
-      const dbError = err as { message?: string };
-      console.error('Error syncing standings:', dbError.message);
-      setError(dbError.message || 'Failed to sync with Supabase.');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to sync with Judging Engine.';
+      console.error('Error syncing standings:', errorMsg);
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -68,51 +73,28 @@ export default function App() {
     }
   }, [submissions]);
 
-  // Real-time subscription & fallback polling
+  // Polling fallback
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStandings();
 
-    // Polling every 10 seconds as requested
     const pollInterval = setInterval(() => {
       fetchStandings();
     }, 10000);
 
-    // Supabase Real-time
-    const channel = supabase
-      .channel('realtime_submissions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'submissions' }, () => {
-        fetchStandings();
-      })
-      .subscribe();
-
     return () => {
       clearInterval(pollInterval);
-      supabase.removeChannel(channel);
     };
   }, []);
 
   // Timer countdown hook — fetches end time from Supabase config table (shared with admin portal)
-  const [endTimeMs, setEndTimeMs] = useState<number>(() => {
+  const [endTimeMs] = useState<number>(() => {
     const fallback = import.meta.env.VITE_HACKATHON_END_TIME || '2026-12-01T18:00:00Z';
     return new Date(fallback).getTime();
   });
 
-  // Fetch the live end time from Supabase config table
+  // Fetch the live end time
   const fetchEndTime = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('config')
-        .select('value')
-        .eq('key', 'end_time')
-        .maybeSingle();
-
-      if (!error && data?.value) {
-        setEndTimeMs(new Date(data.value).getTime());
-      }
-    } catch {
-      // Silently ignore — fallback value stays active
-    }
+    // Relying on VITE_HACKATHON_END_TIME from env for now
   };
 
   useEffect(() => {
